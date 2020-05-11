@@ -1,0 +1,57 @@
+version: "3.7"
+services:
+
+  web:
+    image: "node:current"
+    privileged: true
+    tty: true
+    stdin_open: true
+    restart: always
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=devlopment
+    volumes:
+      - ./src/:/home/node/app
+    ports:
+      - "8081:8081"
+    command: "npm run dev"
+    depends_on:
+      - "database"
+    networks:
+      - backend
+      - database
+    environment:
+      DB_PORT: "5432"
+      DB_HOST: "database"
+
+# Banco de Dados
+  database:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: ${COMPOSE_PROJECT_NAME}
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: 123
+    networks:
+      - database
+    ports:
+      - "5432:5432"
+
+    # 1 - salvando os dados do banco no volume apontado para a máquina host do container, para evitar perdas inesperadas
+    # 2 - executando os scripts desta pasta quando o container for executado
+    volumes:
+      - dbdata:/var/lib/postgresql
+      - ./db:/docker-entrypoint-initdb.d
+
+    # @todo healthcheck:
+    #   test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+    #   timeout: 20s
+
+networks:
+  backend:
+  database:
+
+volumes:
+  dbdata:
+    driver: local
+    labels:
+      c4n.project.name: ${COMPOSE_PROJECT_NAME}
